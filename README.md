@@ -6,7 +6,7 @@ and struct validation. Optional message translation support.
 ## Install
 
 ```go
-import "github.com/pureapi/pureapi-util/validate"
+import "github.com/aatuh/validate"
 ```
 
 ## Quick start
