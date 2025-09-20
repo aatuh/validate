@@ -39,4 +39,5 @@ jobs:
 
       - name: Fuzz smoke
         run: |
-          go test ./... -run=^$ -fuzz=Fuzz -fuzztime=10s
+          chmod +x scripts/fuzz.sh
+          scripts/fuzz.sh
