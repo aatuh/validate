@@ -1,4 +1,4 @@
-package validate
+package translator
 
 import "fmt"
 
@@ -20,8 +20,8 @@ func NewSimpleTranslator(messages map[string]string) *SimpleTranslator {
 	}
 }
 
-// Translate returns the translated message or the default if not found.
-func (st *SimpleTranslator) Translate(key string, params ...any) string {
+// T returns the translated message or the default if not found.
+func (st *SimpleTranslator) T(key string, params ...any) string {
 	if msg, ok := st.messages[key]; ok {
 		return fmt.Sprintf(msg, params...)
 	}
