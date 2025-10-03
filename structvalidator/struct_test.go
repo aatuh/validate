@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aatuh/validate"
+	"github.com/aatuh/validate/v3/core"
 )
 
 type dummyTr struct{}
@@ -13,7 +13,7 @@ type dummyTr struct{}
 func (dummyTr) T(key string, params ...any) string { return key }
 
 type Profile struct {
-	Email string `validate:"string;email"`
+	Website string `validate:"string;min=5"`
 }
 
 type User struct {
@@ -24,14 +24,14 @@ type User struct {
 }
 
 func TestStruct_Basic_Aggregate(t *testing.T) {
-	v := validate.New().WithTranslator(dummyTr{})
+	v := core.New().WithTranslator(dummyTr{})
 	sv := NewStructValidator(v)
 
 	u := User{
 		Name:    "A",
 		Age:     0,
 		Tags:    []string{},
-		Profile: Profile{Email: "no-at-symbol"},
+		Profile: Profile{Website: "x"},
 	}
 	err := sv.ValidateStruct(u)
 	if err == nil {
@@ -40,10 +40,10 @@ func TestStruct_Basic_Aggregate(t *testing.T) {
 	got := err.Error()
 	wantSubs := []string{
 		// builder messages are translator keys here.
-		"string.minLength",
+		"string.min",
 		"int.min",
 		"slice.min",
-		"string.email",
+		"string.min",
 	}
 	for _, w := range wantSubs {
 		if !strings.Contains(got, w) {
@@ -53,7 +53,7 @@ func TestStruct_Basic_Aggregate(t *testing.T) {
 }
 
 func TestStruct_StopOnFirst_And_PathSep(t *testing.T) {
-	v := validate.New().WithTranslator(dummyTr{}).PathSeparator(":")
+	v := core.New().WithTranslator(dummyTr{}).PathSeparator(":")
 	sv := NewStructValidator(v)
 
 	u := struct {
@@ -62,7 +62,7 @@ func TestStruct_StopOnFirst_And_PathSep(t *testing.T) {
 	}{A: "", B: ""}
 
 	// Stop on first should report only A.
-	err := sv.ValidateStructWithOpts(u, validate.ValidateOpts{
+	err := sv.ValidateStructWithOpts(u, core.ValidateOpts{
 		StopOnFirst: true,
 	})
 	if err == nil {
@@ -87,7 +87,7 @@ func TestStruct_StopOnFirst_And_PathSep(t *testing.T) {
 }
 
 func TestStruct_NonStruct(t *testing.T) {
-	v := validate.New().WithTranslator(dummyTr{})
+	v := core.New().WithTranslator(dummyTr{})
 	sv := NewStructValidator(v)
 	err := sv.ValidateStruct(42)
 	if err == nil {
@@ -99,7 +99,7 @@ func TestStruct_NonStruct(t *testing.T) {
 }
 
 func TestStruct_SliceOfStructs_Recurse(t *testing.T) {
-	v := validate.New().WithTranslator(dummyTr{})
+	v := core.New().WithTranslator(dummyTr{})
 	sv := NewStructValidator(v)
 
 	type Item struct {
@@ -116,13 +116,13 @@ func TestStruct_SliceOfStructs_Recurse(t *testing.T) {
 	if !strings.Contains(err.Error(), "Items[0]") {
 		t.Fatalf("want index in path, got %q", err.Error())
 	}
-	if !strings.Contains(err.Error(), "string.minLength") {
-		t.Fatalf("want string.minLength key")
+	if !strings.Contains(err.Error(), "string.min") {
+		t.Fatalf("want string.min key")
 	}
 }
 
 func TestStruct_MapOfStructs_Recurse(t *testing.T) {
-	v := validate.New().WithTranslator(dummyTr{})
+	v := core.New().WithTranslator(dummyTr{})
 	sv := NewStructValidator(v)
 
 	type Item struct {
@@ -142,14 +142,14 @@ func TestStruct_MapOfStructs_Recurse(t *testing.T) {
 }
 
 func TestStruct_OK(t *testing.T) {
-	v := validate.New().WithTranslator(dummyTr{})
+	v := core.New().WithTranslator(dummyTr{})
 	sv := NewStructValidator(v)
 
 	ok := User{
 		Name:    "Ok",
 		Age:     2,
 		Tags:    []string{"x"},
-		Profile: Profile{Email: "u@x.com"},
+		Profile: Profile{Website: "https://example.com"},
 	}
 	if err := sv.ValidateStruct(ok); err != nil {
 		t.Fatalf("unexpected err %v", err)

@@ -1,4 +1,4 @@
-package validate
+package core
 
 import "context"
 
@@ -13,18 +13,13 @@ func WithContext(f CheckFunc) CheckFuncCtx {
 	if f == nil {
 		return nil
 	}
-	return func(ctx context.Context, v any) error {
-		return f(v)
-	}
+	return func(ctx context.Context, v any) error { return f(v) }
 }
 
-// WithoutContext adapts a CheckFuncCtx to a CheckFunc by using
-// context.Background(). Prefer passing through contexts in hot paths.
+// WithoutContext adapts a CheckFuncCtx to a CheckFunc.
 func WithoutContext(f CheckFuncCtx) CheckFunc {
 	if f == nil {
 		return nil
 	}
-	return func(v any) error {
-		return f(context.Background(), v)
-	}
+	return func(v any) error { return f(context.Background(), v) }
 }

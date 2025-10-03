@@ -6,7 +6,6 @@ import "testing"
 func FuzzBuildStringRules(f *testing.F) {
 	sv := NewStringValidators(dummyTr{})
 	f.Add("min=1;max=5;regex=^a.*z$", "abcz")
-	f.Add("email", "user@example.com")
 	f.Add("oneof=a b", "a")
 	f.Fuzz(func(t *testing.T, tail string, val string) {
 		// Split tail into tokens; tolerate empty or junk.

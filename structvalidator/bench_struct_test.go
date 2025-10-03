@@ -3,7 +3,7 @@ package structvalidator
 import (
 	"testing"
 
-	"github.com/aatuh/validate"
+	"github.com/aatuh/validate/v3/core"
 )
 
 type benchItem struct {
@@ -17,7 +17,7 @@ type benchOrder struct {
 }
 
 func BenchmarkStruct_Medium_Aggregate(b *testing.B) {
-	v := validate.New()
+	v := core.New()
 	sv := NewStructValidator(v)
 	in := benchOrder{
 		ID: "ORDER001",
@@ -41,7 +41,7 @@ func BenchmarkStruct_Medium_Aggregate(b *testing.B) {
 }
 
 func BenchmarkStruct_Medium_StopOnFirst(b *testing.B) {
-	v := validate.New()
+	v := core.New()
 	sv := NewStructValidator(v)
 	in := benchOrder{
 		ID: "",
@@ -49,7 +49,7 @@ func BenchmarkStruct_Medium_StopOnFirst(b *testing.B) {
 			{Name: "", Price: -1},
 		},
 	}
-	opts := validate.ValidateOpts{StopOnFirst: true}
+	opts := core.ValidateOpts{StopOnFirst: true}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = sv.ValidateStructWithOpts(in, opts)

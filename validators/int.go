@@ -6,24 +6,51 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aatuh/validate/translator"
+	"github.com/aatuh/validate/v3/translator"
 )
 
 // IntValidator defines a function that validates an int64.
+//
+// This type represents a validation function that takes an int64 value and
+// returns an error if validation fails.
 type IntValidator func(int64) error
 
 // IntValidators provides integer validation methods.
+//
+// Fields:
+//   - translator: Optional translator for localized error messages.
 type IntValidators struct {
 	translator translator.Translator
 }
 
+// NewIntValidators creates a new IntValidators instance.
+//
+// Parameters:
+//   - t: Optional translator for localized error messages.
+//
+// Returns:
+//   - *IntValidators: A new IntValidators instance.
 func NewIntValidators(
 	t translator.Translator,
 ) *IntValidators {
 	return &IntValidators{translator: t}
 }
 
+// Translator returns the translator instance.
+//
+// Returns:
+//   - translator.Translator: The translator instance.
+func (iv *IntValidators) Translator() translator.Translator {
+	return iv.translator
+}
+
 // WithInt applies IntValidators converting the value to int64 first.
+//
+// Parameters:
+//   - validators: Variable number of integer validators to apply.
+//
+// Returns:
+//   - func(any) error: A validator function that validates any value.
 func (iv *IntValidators) WithInt(
 	validators ...IntValidator,
 ) func(any) error {
@@ -42,6 +69,12 @@ func (iv *IntValidators) WithInt(
 }
 
 // WithInt64 applies IntValidators requiring exactly int64.
+//
+// Parameters:
+//   - validators: Variable number of integer validators to apply.
+//
+// Returns:
+//   - func(any) error: A validator function that validates int64 values.
 func (iv *IntValidators) WithInt64(
 	validators ...IntValidator,
 ) func(any) error {
@@ -59,6 +92,13 @@ func (iv *IntValidators) WithInt64(
 	}
 }
 
+// MinInt returns a validator that checks for minimum integer value.
+//
+// Parameters:
+//   - min: The minimum integer value allowed.
+//
+// Returns:
+//   - IntValidator: A validator function that checks minimum value.
 func (iv *IntValidators) MinInt(min int64) IntValidator {
 	return func(i int64) error {
 		if i < min {
@@ -68,6 +108,13 @@ func (iv *IntValidators) MinInt(min int64) IntValidator {
 	}
 }
 
+// MaxInt returns a validator that checks for maximum integer value.
+//
+// Parameters:
+//   - max: The maximum integer value allowed.
+//
+// Returns:
+//   - IntValidator: A validator function that checks maximum value.
 func (iv *IntValidators) MaxInt(max int64) IntValidator {
 	return func(i int64) error {
 		if i > max {
@@ -79,6 +126,15 @@ func (iv *IntValidators) MaxInt(max int64) IntValidator {
 
 // BuildIntValidator builds an integer validator from tokens.
 // rules[0] == "int" or "int64".
+//
+// Parameters:
+//   - iv: IntValidators instance for creating validators.
+//   - rules: Slice of rule tokens.
+//   - intType: The integer type ("int" or "int64").
+//
+// Returns:
+//   - func(any) error: The compiled validator function.
+//   - error: An error if the rules are invalid.
 func BuildIntValidator(
 	iv *IntValidators, rules []string, intType string,
 ) (func(any) error, error) {

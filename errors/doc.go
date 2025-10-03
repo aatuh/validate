@@ -1,4 +1,5 @@
-// Package errors provides error types and error handling utilities for validation.
+// Package errors provides error types and error handling utilities for
+// validation.
 //
 // The errors package defines structured error types that provide detailed
 // information about validation failures, including field paths, error codes,

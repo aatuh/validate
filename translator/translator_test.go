@@ -19,7 +19,6 @@ func TestDefaultEnglishTranslations_KeysPresent(t *testing.T) {
 	m := DefaultEnglishTranslations()
 	keys := []string{
 		"string.minLength",
-		"string.email.invalid",
 		"string.regex.noMatch",
 		"int.notInt64",
 		"slice.element",

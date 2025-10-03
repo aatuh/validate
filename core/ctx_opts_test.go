@@ -1,4 +1,4 @@
-package validate
+package core
 
 import (
 	"context"

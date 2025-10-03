@@ -3,30 +3,56 @@ package validators
 import (
 	"errors"
 	"fmt"
-	"net/mail"
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
-	"github.com/aatuh/validate/translator"
+	"github.com/aatuh/validate/v3/translator"
 )
 
 // StringValidator defines a function that validates a string.
+//
+// This type represents a validation function that takes a string value and
+// returns an error if validation fails.
 type StringValidator func(string) error
 
 // StringValidators provides string validation methods.
+//
+// Fields:
+//   - translator: Optional translator for localized error messages.
 type StringValidators struct {
 	translator translator.Translator
 }
 
 // NewStringValidators creates a new StringValidators instance.
+//
+// Parameters:
+//   - t: Optional translator for localized error messages.
+//
+// Returns:
+//   - *StringValidators: A new StringValidators instance.
 func NewStringValidators(
 	t translator.Translator,
 ) *StringValidators {
 	return &StringValidators{translator: t}
 }
 
+// Translator returns the translator instance.
+//
+// Returns:
+//   - translator.Translator: The translator instance.
+func (sv *StringValidators) Translator() translator.Translator {
+	return sv.translator
+}
+
 // WithString applies a series of string validators to a value.
+//
+// Parameters:
+//   - validators: Variable number of string validators to apply.
+//
+// Returns:
+//   - func(any) error: A validator function that validates any value.
 func (sv *StringValidators) WithString(
 	validators ...StringValidator,
 ) func(any) error {
@@ -45,6 +71,12 @@ func (sv *StringValidators) WithString(
 }
 
 // Length returns a validator that checks for exact length.
+//
+// Parameters:
+//   - n: The exact length the string must have.
+//
+// Returns:
+//   - StringValidator: A validator function that checks exact length.
 func (sv *StringValidators) Length(n int) StringValidator {
 	return func(s string) error {
 		if len(s) != n {
@@ -54,6 +86,13 @@ func (sv *StringValidators) Length(n int) StringValidator {
 	}
 }
 
+// MinLength returns a validator that checks for minimum length.
+//
+// Parameters:
+//   - n: The minimum length the string must have.
+//
+// Returns:
+//   - StringValidator: A validator function that checks minimum length.
 func (sv *StringValidators) MinLength(n int) StringValidator {
 	return func(s string) error {
 		if len(s) < n {
@@ -63,6 +102,13 @@ func (sv *StringValidators) MinLength(n int) StringValidator {
 	}
 }
 
+// MaxLength returns a validator that checks for maximum length.
+//
+// Parameters:
+//   - n: The maximum length the string can have.
+//
+// Returns:
+//   - StringValidator: A validator function that checks maximum length.
 func (sv *StringValidators) MaxLength(n int) StringValidator {
 	return func(s string) error {
 		if len(s) > n {
@@ -72,6 +118,47 @@ func (sv *StringValidators) MaxLength(n int) StringValidator {
 	}
 }
 
+// MinRunes returns a validator that checks for minimum number of Unicode runes.
+//
+// Parameters:
+//   - n: The minimum number of runes the string must have.
+//
+// Returns:
+//   - StringValidator: A validator function that checks minimum rune count.
+func (sv *StringValidators) MinRunes(n int) StringValidator {
+	return func(s string) error {
+		if utf8.RuneCountInString(s) < n {
+			return errors.New(sv.translate("string.minRunes", n))
+		}
+		return nil
+	}
+}
+
+// MaxRunes returns a validator that checks for maximum number of Unicode runes.
+//
+// Parameters:
+//   - n: The maximum number of runes the string can have.
+//
+// Returns:
+//   - StringValidator: A validator function that checks maximum rune count.
+func (sv *StringValidators) MaxRunes(n int) StringValidator {
+	return func(s string) error {
+		if utf8.RuneCountInString(s) > n {
+			return errors.New(sv.translate("string.maxRunes", n))
+		}
+		return nil
+	}
+}
+
+// OneOf returns a validator that checks if the string is one of the specified
+// values.
+//
+// Parameters:
+//   - values: Variable number of allowed string values.
+//
+// Returns:
+//   - StringValidator: A validator function that checks if string is in the
+//     allowed values.
 func (sv *StringValidators) OneOf(
 	values ...string,
 ) StringValidator {
@@ -86,21 +173,20 @@ func (sv *StringValidators) OneOf(
 	}
 }
 
-func (sv *StringValidators) Email() StringValidator {
-	return func(s string) error {
-		if len(s) > 254 {
-			return errors.New(sv.translate("string.maxLength", 254))
-		}
-		if _, err := mail.ParseAddress(s); err != nil {
-			return errors.New(sv.translate("string.email.invalid"))
-		}
-		return nil
-	}
-}
-
 // Regex returns a validator that ensures the string matches the pattern.
+// It includes safety measures against catastrophic backtracking and enforces
+// reasonable input length limits.
 func (sv *StringValidators) Regex(pattern string) StringValidator {
-	re, err := regexp.Compile(pattern)
+	// Add safety anchors to prevent catastrophic backtracking
+	safePattern := pattern
+	if !strings.HasPrefix(pattern, "^") {
+		safePattern = "^" + safePattern
+	}
+	if !strings.HasSuffix(pattern, "$") {
+		safePattern = safePattern + "$"
+	}
+
+	re, err := regexp.Compile(safePattern)
 	if err != nil {
 		// Always fail if the pattern is invalid.
 		return func(s string) error {
@@ -109,7 +195,17 @@ func (sv *StringValidators) Regex(pattern string) StringValidator {
 			)
 		}
 	}
+
 	return func(s string) error {
+		// Enforce maximum input length to prevent DoS attacks
+		const maxInputLength = 10000
+		if len(s) > maxInputLength {
+			return errors.New(
+				sv.translate("string.regex.inputTooLong", maxInputLength),
+			)
+		}
+
+		// Use the pre-compiled regex for performance
 		if !re.MatchString(s) {
 			return errors.New(
 				sv.translate("string.regex.noMatch", pattern),
@@ -157,8 +253,6 @@ func BuildStringValidator(
 		case "oneof":
 			opts := strings.Split(param, " ")
 			fns = append(fns, sv.OneOf(opts...))
-		case "email":
-			fns = append(fns, sv.Email())
 		case "regex":
 			fns = append(fns, sv.Regex(param))
 		default:

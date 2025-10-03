@@ -20,11 +20,11 @@ func TestFieldError_String_WithAndWithoutMsg(t *testing.T) {
 
 func TestErrors_Error_Has_Filter_AsMap_Sort(t *testing.T) {
 	es := Errors{
-		{Path: "User.Email", Code: CodeStringPattern, Msg: "bad"},
+		{Path: "User.Website", Code: CodeStringPattern, Msg: "bad"},
 		{Path: "User.Name", Code: CodeStringMin, Param: 2},
 		{Path: "Order.ID", Code: CodeStringNonEmpty},
 	}
-	if !es.Has("User.Email") || es.Has("User.Missing") {
+	if !es.Has("User.Website") || es.Has("User.Missing") {
 		t.Fatalf("Has path failed")
 	}
 	sub := es.Filter("User.")
@@ -32,7 +32,7 @@ func TestErrors_Error_Has_Filter_AsMap_Sort(t *testing.T) {
 		t.Fatalf("Filter size = %d", len(sub))
 	}
 	m := es.AsMap()
-	if len(m["User.Email"]) != 1 || len(m["User.Name"]) != 1 {
+	if len(m["User.Website"]) != 1 || len(m["User.Name"]) != 1 {
 		t.Fatalf("AsMap mismatch: %#v", m)
 	}
 	// Sorting should order by Path then Code.

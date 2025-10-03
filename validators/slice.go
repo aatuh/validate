@@ -7,23 +7,51 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aatuh/validate/translator"
+	"github.com/aatuh/validate/v3/translator"
 )
 
 // SliceValidator validates a slice presented as []any.
+//
+// This type represents a validation function that takes a slice of any values
+// and returns an error if validation fails.
 type SliceValidator func([]any) error
 
+// SliceValidators provides slice validation methods.
+//
+// Fields:
+//   - translator: Optional translator for localized error messages.
 type SliceValidators struct {
 	translator translator.Translator
 }
 
+// NewSliceValidators creates a new SliceValidators instance.
+//
+// Parameters:
+//   - t: Optional translator for localized error messages.
+//
+// Returns:
+//   - *SliceValidators: A new SliceValidators instance.
 func NewSliceValidators(
 	t translator.Translator,
 ) *SliceValidators {
 	return &SliceValidators{translator: t}
 }
 
+// Translator returns the translator instance.
+//
+// Returns:
+//   - translator.Translator: The translator instance.
+func (sv *SliceValidators) Translator() translator.Translator {
+	return sv.translator
+}
+
 // WithSlice applies validators to any slice type via reflection.
+//
+// Parameters:
+//   - validators: Variable number of slice validators to apply.
+//
+// Returns:
+//   - func(any) error: A validator function that validates any slice value.
 func (sv *SliceValidators) WithSlice(
 	validators ...SliceValidator,
 ) func(any) error {
@@ -41,6 +69,13 @@ func (sv *SliceValidators) WithSlice(
 	}
 }
 
+// SliceLength returns a validator that checks for exact slice length.
+//
+// Parameters:
+//   - n: The exact length the slice must have.
+//
+// Returns:
+//   - SliceValidator: A validator function that checks exact length.
 func (sv *SliceValidators) SliceLength(n int) SliceValidator {
 	return func(s []any) error {
 		if len(s) != n {
@@ -50,6 +85,13 @@ func (sv *SliceValidators) SliceLength(n int) SliceValidator {
 	}
 }
 
+// MinSliceLength returns a validator that checks for minimum slice length.
+//
+// Parameters:
+//   - n: The minimum length the slice must have.
+//
+// Returns:
+//   - SliceValidator: A validator function that checks minimum length.
 func (sv *SliceValidators) MinSliceLength(n int) SliceValidator {
 	return func(s []any) error {
 		if len(s) < n {
@@ -59,6 +101,13 @@ func (sv *SliceValidators) MinSliceLength(n int) SliceValidator {
 	}
 }
 
+// MaxSliceLength returns a validator that checks for maximum slice length.
+//
+// Parameters:
+//   - n: The maximum length the slice can have.
+//
+// Returns:
+//   - SliceValidator: A validator function that checks maximum length.
 func (sv *SliceValidators) MaxSliceLength(n int) SliceValidator {
 	return func(s []any) error {
 		if len(s) > n {

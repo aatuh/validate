@@ -2,7 +2,6 @@ package validators
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 )
 
@@ -52,7 +51,7 @@ func TestString_Length_Min_Max(t *testing.T) {
 	}
 }
 
-func TestString_OneOf_Email_Regex(t *testing.T) {
+func TestString_OneOf_Regex(t *testing.T) {
 	sv := NewStringValidators(dummyTr{})
 
 	one := sv.WithString(sv.OneOf("red", "green", "blue"))
@@ -61,16 +60,6 @@ func TestString_OneOf_Email_Regex(t *testing.T) {
 	}
 	if err := one("yellow"); err == nil {
 		t.Fatalf("oneof should fail for yellow")
-	}
-
-	email := sv.WithString(sv.Email())
-	if err := email("user@example.com"); err != nil {
-		t.Fatalf("valid email got %v", err)
-	}
-	// Use length 255 to exceed 254-limit and ensure failure.
-	long := strings.Repeat("a", 249) + "@x.com" // 249 + 6 = 255
-	if err := email(long); err == nil {
-		t.Fatalf("email length should fail")
 	}
 
 	// Regex: invalid pattern is handled and always errors on use.

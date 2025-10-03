@@ -1,15 +1,15 @@
-package validate
+package core
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/aatuh/validate/translator"
+	"github.com/aatuh/validate/v3/translator"
 )
 
 type keyEchoTr struct{}
 
-// T returns "<key> <params...>" for simple, deterministic assertions.
+// T returns "<key> <params...>" for deterministic assertions.
 func (keyEchoTr) T(key string, params ...any) string {
 	if len(params) == 0 {
 		return key
@@ -63,7 +63,7 @@ func TestFromRules_KnownTypes(t *testing.T) {
 		t.Fatalf("non-bool should fail")
 	}
 
-	// slice rules (use []any to match current implementation)
+	// slice rules
 	sf2, err := v.FromRules([]string{"slice", "min=1"})
 	if err != nil {
 		t.Fatalf("slice build: %v", err)
@@ -104,7 +104,7 @@ func TestFromRules_ErrorsAndCustom(t *testing.T) {
 	tr := translator.NewSimpleTranslator(
 		translator.DefaultEnglishTranslations(),
 	)
-	v.WithTranslator(tr)
+	v = v.WithTranslator(tr)
 	fn2, err := v.FromRules([]string{"string", "regex=("})
 	if err != nil {
 		t.Fatalf("regex invalid pattern should not error at build: %v", err)
@@ -120,12 +120,12 @@ func TestPathSeparator_Set_And_IgnoreEmpty(t *testing.T) {
 		t.Fatalf("default pathSep should be '.', got %q", v.pathSep)
 	}
 	// Set to a custom separator.
-	v.PathSeparator(":")
+	v = v.PathSeparator(":")
 	if v.pathSep != ":" {
 		t.Fatalf("PathSeparator did not take effect, got %q", v.pathSep)
 	}
 	// Empty string should be ignored (remain the same).
-	v.PathSeparator("")
+	v = v.PathSeparator("")
 	if v.pathSep != ":" {
 		t.Fatalf("empty PathSeparator should be ignored, got %q", v.pathSep)
 	}
