@@ -46,14 +46,26 @@ func NewEngineWithCustomRules(custom map[string]func(any) error) *Engine {
 	return e
 }
 
-// Copy returns a shallow copy that intentionally shares caches and
-// customRules. This mirrors prior behavior used in tests.
+// Copy returns a new Engine with the same configuration but separate cache.
+// This mirrors prior behavior used in tests.
 func (e *Engine) Copy() *Engine {
 	if e == nil {
 		return nil
 	}
-	cp := *e
-	return &cp
+	// Create new Engine with same config but new cache
+	newEngine := &Engine{
+		customRules: make(map[string]func(any) error),
+		translator:  e.translator,
+		pathSep:     e.pathSep,
+		// Note: compiled cache is intentionally not copied (new empty cache)
+	}
+
+	// Copy custom rules
+	for k, v := range e.customRules {
+		newEngine.customRules[k] = v
+	}
+
+	return newEngine
 }
 
 // WithCustomRule returns a new Engine with the rule registered.
@@ -64,25 +76,36 @@ func (e *Engine) WithCustomRule(name string, rule func(any) error) *Engine {
 	}
 	newCustom[name] = rule
 
-	cp := *e
-	cp.customRules = newCustom
-	return &cp
+	return &Engine{
+		customRules: newCustom,
+		translator:  e.translator,
+		pathSep:     e.pathSep,
+		// Note: compiled cache is intentionally not copied (new empty cache)
+	}
 }
 
 // WithTranslator returns a new Engine with a translator.
 func (e *Engine) WithTranslator(t translator.Translator) *Engine {
-	cp := *e
-	cp.translator = t
-	return &cp
+	return &Engine{
+		customRules: e.customRules,
+		translator:  t,
+		pathSep:     e.pathSep,
+		// Note: compiled cache is intentionally not copied (new empty cache)
+	}
 }
 
 // PathSeparator returns a new Engine with a different path separator.
 func (e *Engine) PathSeparator(sep string) *Engine {
-	cp := *e
+	newPathSep := e.pathSep
 	if sep != "" {
-		cp.pathSep = sep
+		newPathSep = sep
 	}
-	return &cp
+	return &Engine{
+		customRules: e.customRules,
+		translator:  e.translator,
+		pathSep:     newPathSep,
+		// Note: compiled cache is intentionally not copied (new empty cache)
+	}
 }
 
 // Translator exposes the configured translator.
