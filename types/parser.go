@@ -6,6 +6,15 @@ import (
 	"strings"
 )
 
+// truncateForError truncates a string for use in error messages to prevent
+// extremely long error messages from fuzz testing.
+func truncateForError(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
+}
+
 // ParseTag parses a struct tag string into a slice of rules.
 // splitTagSafely splits a tag string by semicolons, respecting parentheses.
 func splitTagSafely(tag string) []string {
@@ -60,7 +69,7 @@ func ParseTag(tag string) ([]Rule, error) {
 		for _, part := range parts[1:] {
 			rule, err := parseStringRule(part)
 			if err != nil {
-				return nil, fmt.Errorf("invalid string rule %q: %w", part, err)
+				return nil, fmt.Errorf("invalid string rule %q: %w", truncateForError(part, 20), err)
 			}
 			if rule != nil {
 				rules = append(rules, *rule)
@@ -75,7 +84,7 @@ func ParseTag(tag string) ([]Rule, error) {
 		for _, part := range parts[1:] {
 			rule, err := parseIntRule(part)
 			if err != nil {
-				return nil, fmt.Errorf("invalid int rule %q: %w", part, err)
+				return nil, fmt.Errorf("invalid int rule %q: %w", truncateForError(part, 50), err)
 			}
 			if rule != nil {
 				rules = append(rules, *rule)
@@ -86,7 +95,7 @@ func ParseTag(tag string) ([]Rule, error) {
 		for _, part := range parts[1:] {
 			rule, err := parseSliceRule(part)
 			if err != nil {
-				return nil, fmt.Errorf("invalid slice rule %q: %w", part, err)
+				return nil, fmt.Errorf("invalid slice rule %q: %w", truncateForError(part, 50), err)
 			}
 			if rule != nil {
 				rules = append(rules, *rule)
@@ -95,7 +104,7 @@ func ParseTag(tag string) ([]Rule, error) {
 	case "bool":
 		rules = append(rules, NewRule(KBool, nil))
 	default:
-		return nil, fmt.Errorf("unknown type: %s", baseType)
+		return nil, fmt.Errorf("unknown type: %s", truncateForError(baseType, 50))
 	}
 
 	return rules, nil
@@ -166,7 +175,7 @@ func parseIntRule(part string) (*Rule, error) {
 		}
 		return &Rule{Kind: KMaxInt, Args: map[string]any{"n": n}}, nil
 	default:
-		return nil, fmt.Errorf("unknown int rule: %s", part)
+		return nil, fmt.Errorf("unknown int rule: %s", truncateForError(part, 50))
 	}
 }
 
@@ -198,7 +207,7 @@ func parseSliceRule(part string) (*Rule, error) {
 		// Parse nested rules from foreach=(string;min=2;max=10)
 		inner := strings.TrimPrefix(part, "foreach=")
 		if !strings.HasPrefix(inner, "(") || !strings.HasSuffix(inner, ")") {
-			return nil, fmt.Errorf("foreach must be wrapped in parentheses: %s", inner)
+			return nil, fmt.Errorf("foreach must be wrapped in parentheses: %s", truncateForError(inner, 50))
 		}
 		inner = strings.TrimPrefix(inner, "(")
 		inner = strings.TrimSuffix(inner, ")")
@@ -220,6 +229,6 @@ func parseSliceRule(part string) (*Rule, error) {
 			Elem: &innerRules[0],                      // Keep first rule for backward compatibility
 		}, nil
 	default:
-		return nil, fmt.Errorf("unknown slice rule: %s", part)
+		return nil, fmt.Errorf("unknown slice rule: %s", truncateForError(part, 50))
 	}
 }

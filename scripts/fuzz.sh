@@ -13,6 +13,7 @@ for pkg in $(go list ./...); do
   fi
   for name in $names; do
     echo "Fuzzing $pkg::$name"
-    go test "$pkg" -run=^$ -fuzz="$name" -fuzztime=10s
+    # Use exact match with ^ and $ to avoid pattern matching issues
+    go test "$pkg" -run=^$ -fuzz="^${name}$" -fuzztime=10s
   done
 done

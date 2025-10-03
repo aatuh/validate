@@ -22,10 +22,15 @@ func (c *Compiler) compileRegexSafe(pattern string) (*regexp.Regexp, error) {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		// Important: pass pattern as a param for translations.
+		// Truncate pattern to prevent extremely long error messages
+		truncatedPattern := pattern
+		if len(pattern) > 100 {
+			truncatedPattern = pattern[:100] + "..."
+		}
 		_ = c.translateMessage(
 			errors.CodeStringRegexInvalidPattern,
 			"invalid regex pattern: %s",
-			[]any{pattern},
+			[]any{truncatedPattern},
 		)
 		return nil, err
 	}
