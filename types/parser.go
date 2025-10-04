@@ -103,8 +103,33 @@ func ParseTag(tag string) ([]Rule, error) {
 		}
 	case "bool":
 		rules = append(rules, NewRule(KBool, nil))
+		for _, part := range parts[1:] {
+			rule, err := parseBoolRule(part)
+			if err != nil {
+				return nil, fmt.Errorf("invalid bool rule %q: %w", truncateForError(part, 20), err)
+			}
+			if rule != nil {
+				rules = append(rules, *rule)
+			}
+		}
 	default:
-		return nil, fmt.Errorf("unknown type: %s", truncateForError(baseType, 50))
+		// Check if it's a custom type
+		if IsGlobalTypeRegistered(baseType) {
+			// Create a custom type rule
+			rules = append(rules, NewRule(Kind(baseType), nil))
+			// Parse any additional rules for the custom type
+			for _, part := range parts[1:] {
+				rule, err := parseCustomTypeRule(part)
+				if err != nil {
+					return nil, fmt.Errorf("invalid %s rule %q: %w", baseType, truncateForError(part, 20), err)
+				}
+				if rule != nil {
+					rules = append(rules, *rule)
+				}
+			}
+		} else {
+			return nil, fmt.Errorf("unknown type: %s", truncateForError(baseType, 50))
+		}
 	}
 
 	return rules, nil
@@ -116,6 +141,8 @@ func parseStringRule(part string) (*Rule, error) {
 	}
 
 	switch {
+	case part == "omitempty":
+		return &Rule{Kind: KOmitempty, Args: nil}, nil
 	case strings.HasPrefix(part, "length="):
 		n, err := strconv.Atoi(strings.TrimPrefix(part, "length="))
 		if err != nil {
@@ -162,6 +189,8 @@ func parseIntRule(part string) (*Rule, error) {
 	}
 
 	switch {
+	case part == "omitempty":
+		return &Rule{Kind: KOmitempty, Args: nil}, nil
 	case strings.HasPrefix(part, "min="):
 		n, err := strconv.ParseInt(strings.TrimPrefix(part, "min="), 10, 64)
 		if err != nil {
@@ -185,6 +214,8 @@ func parseSliceRule(part string) (*Rule, error) {
 	}
 
 	switch {
+	case part == "omitempty":
+		return &Rule{Kind: KOmitempty, Args: nil}, nil
 	case strings.HasPrefix(part, "length="):
 		n, err := strconv.Atoi(strings.TrimPrefix(part, "length="))
 		if err != nil {
@@ -231,4 +262,24 @@ func parseSliceRule(part string) (*Rule, error) {
 	default:
 		return nil, fmt.Errorf("unknown slice rule: %s", truncateForError(part, 50))
 	}
+}
+
+func parseCustomTypeRule(part string) (*Rule, error) {
+	if part == "" {
+		return nil, nil
+	}
+
+	// For custom types, we allow any rule name to be passed through
+	// This enables plugin-based validation (email, uuid, etc.)
+	return &Rule{Kind: Kind(part), Args: nil}, nil
+}
+
+func parseBoolRule(part string) (*Rule, error) {
+	if part == "" {
+		return nil, nil
+	}
+	if part == "omitempty" {
+		return &Rule{Kind: KOmitempty, Args: nil}, nil
+	}
+	return nil, fmt.Errorf("unknown bool rule: %s", truncateForError(part, 20))
 }

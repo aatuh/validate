@@ -24,6 +24,8 @@ const KUUID types.Kind = "uuid"
 
 func init() {
 	types.RegisterRule(KUUID, compileUUID)
+	// Register UUID as a custom type
+	types.RegisterGlobalType("uuid", &UUIDTypeValidatorFactory{})
 }
 
 func compileUUID(c *types.Compiler, _ types.Rule) (func(any) error, error) {

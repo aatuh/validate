@@ -74,12 +74,20 @@ func (c *Compiler) Compile(rules []Rule) ValidatorFunc {
 	}
 
 	// Pre-compile regexes and other expensive operations
-	compiledRules := make([]compiledRule, len(rules))
-	for i, rule := range rules {
-		compiledRules[i] = c.compileRule(rule)
+	compiledRules := make([]compiledRule, 0, len(rules))
+	hasOmitEmpty := false
+	for _, rule := range rules {
+		if rule.Kind == KOmitempty {
+			hasOmitEmpty = true
+			continue
+		}
+		compiledRules = append(compiledRules, c.compileRule(rule))
 	}
 
 	return func(v any) error {
+		if hasOmitEmpty && isZeroValue(v) {
+			return nil
+		}
 		for _, rule := range compiledRules {
 			if err := rule.validate(v); err != nil {
 				return err
@@ -87,6 +95,34 @@ func (c *Compiler) Compile(rules []Rule) ValidatorFunc {
 		}
 		return nil
 	}
+}
+
+// isZeroValue reports whether v is the zero value for its dynamic type.
+func isZeroValue(v any) bool {
+	if v == nil {
+		return true
+	}
+	rv := reflect.ValueOf(v)
+	// Treat nil interface/pointer/map/slice as empty
+	switch rv.Kind() {
+	case reflect.Ptr, reflect.Interface:
+		return rv.IsNil()
+	case reflect.Slice:
+		if rv.IsNil() {
+			return true
+		}
+		return rv.Len() == 0
+	case reflect.Map:
+		if rv.IsNil() {
+			return true
+		}
+		return rv.Len() == 0
+	case reflect.String:
+		return rv.Len() == 0
+	}
+	// For other kinds, compare to zero
+	z := reflect.Zero(rv.Type())
+	return reflect.DeepEqual(rv.Interface(), z.Interface())
 }
 
 // CompileField compiles rules for struct field validation.
@@ -221,6 +257,10 @@ func (c *Compiler) compileRule(rule Rule) compiledRule {
 	case KBool:
 		return compiledRule{validate: c.validateBool}
 	default:
+		// Check if it's a custom type
+		if IsGlobalTypeRegistered(string(rule.Kind)) {
+			return compiledRule{validate: c.validateCustomType(rule.Kind)}
+		}
 		return compiledRule{validate: func(any) error {
 			return fmt.Errorf("unknown rule kind: %s", rule.Kind)
 		}}
@@ -551,4 +591,15 @@ func (c *Compiler) validateMaxRunes(v any, n int) error {
 		return verrs.Errors{verrs.FieldError{Path: "", Code: verrs.CodeStringMaxRunes, Msg: msg}}
 	}
 	return nil
+}
+
+func (c *Compiler) validateCustomType(kind Kind) func(any) error {
+	return func(v any) error {
+		// Get the custom type validator from the global registry
+		validator, exists := GetGlobalTypeValidator(string(kind), c.translator)
+		if !exists {
+			return fmt.Errorf("custom type %s not found", kind)
+		}
+		return validator.Validate(v)
+	}
 }

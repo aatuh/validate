@@ -86,6 +86,59 @@ func TestStruct_StopOnFirst_And_PathSep(t *testing.T) {
 	}
 }
 
+func TestStruct_OmitEmpty_SkipsZeroValues(t *testing.T) {
+	v := core.New().WithTranslator(dummyTr{})
+	sv := NewStructValidator(v)
+
+	type Opt struct {
+		S string   `validate:"string;omitempty;min=3"`
+		I int      `validate:"int;omitempty;min=1"`
+		B bool     `validate:"bool;omitempty"`
+		L []string `validate:"slice;omitempty;min=1"`
+	}
+
+	// Zero values should be skipped by omitempty and not trigger min rules
+	var o Opt
+	if err := sv.ValidateStruct(o); err != nil {
+		t.Fatalf("want no error, got %v", err)
+	}
+
+	// Non-zero should validate and fail
+	o = Opt{S: "ab"}
+	err := sv.ValidateStruct(o)
+	if err == nil {
+		t.Fatalf("want error for S min length")
+	}
+	if !strings.Contains(err.Error(), "string.min") {
+		t.Fatalf("want string.min in %v", err)
+	}
+
+	// For int: zero skipped, non-zero below min should fail
+	o = Opt{I: 0}
+	if err := sv.ValidateStruct(o); err != nil {
+		t.Fatalf("want no error for I=0 with omitempty, got %v", err)
+	}
+	o = Opt{I: 0}
+	if err := sv.ValidateStruct(o); err != nil {
+		t.Fatalf("want no error for I=0 with omitempty, got %v", err)
+	}
+	o = Opt{I: 1}
+	if err := sv.ValidateStruct(o); err != nil {
+		// I=1 meets min=1
+		t.Fatalf("want no error for I=1, got %v", err)
+	}
+
+	// Slice: nil or empty should be skipped
+	o = Opt{L: nil}
+	if err := sv.ValidateStruct(o); err != nil {
+		t.Fatalf("want no error for nil slice with omitempty, got %v", err)
+	}
+	o = Opt{L: []string{}}
+	if err := sv.ValidateStruct(o); err != nil {
+		t.Fatalf("want no error for empty slice with omitempty, got %v", err)
+	}
+}
+
 func TestStruct_NonStruct(t *testing.T) {
 	v := core.New().WithTranslator(dummyTr{})
 	sv := NewStructValidator(v)

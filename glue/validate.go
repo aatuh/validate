@@ -2,6 +2,7 @@ package glue
 
 import (
 	"github.com/aatuh/validate/v3/core"
+	"github.com/aatuh/validate/v3/structvalidator"
 	"github.com/aatuh/validate/v3/translator"
 	"github.com/aatuh/validate/v3/types"
 )
@@ -69,6 +70,42 @@ func (v *Validate) FromTag(tag string) (func(any) error, error) {
 	return v.engine.FromRules([]string{tag})
 }
 
+// CompileRules compiles AST rules into a validator function.
+func (v *Validate) CompileRules(rules []types.Rule) func(any) error {
+	return v.engine.CompileRules(rules)
+}
+
+// CheckTag compiles a tag and validates a single value.
+func (v *Validate) CheckTag(tag string, value any) error {
+	fn, err := v.FromTag(tag)
+	if err != nil {
+		return err
+	}
+	return fn(value)
+}
+
+// CheckRules compiles AST rules and validates a single value.
+func (v *Validate) CheckRules(rules []types.Rule, value any) error {
+	return v.engine.CompileRules(rules)(value)
+}
+
+// Struct returns a struct validator bound to this Validate's engine.
+func (v *Validate) Struct() *structvalidator.StructValidator {
+	return structvalidator.NewStructValidator((*core.Validate)(v.engine))
+}
+
+// ValidateStruct validates a struct using `validate` tags with defaults.
+func (v *Validate) ValidateStruct(s any) error {
+	return v.Struct().ValidateStruct(s)
+}
+
+// ValidateStructWithOpts validates a struct with advanced options.
+func (v *Validate) ValidateStructWithOpts(
+	s any, opts core.ValidateOpts,
+) error {
+	return v.Struct().ValidateStructWithOpts(s, opts)
+}
+
 // String returns a string validator builder.
 func (v *Validate) String() *StringBuilder {
 	return &StringBuilder{
@@ -99,5 +136,15 @@ func (v *Validate) Slice() *SliceBuilder {
 	return &SliceBuilder{
 		engine: v.engine,
 		rules:  []types.Rule{types.NewRule(types.KSlice, nil)},
+	}
+}
+
+// CustomType returns a custom type validator builder for the given type name.
+// The type must be registered using types.RegisterGlobalType before use.
+func (v *Validate) CustomType(typeName string) *CustomTypeBuilder {
+	return &CustomTypeBuilder{
+		engine:   v.engine,
+		typeName: typeName,
+		rules:    []types.Rule{types.NewRule(types.Kind(typeName), nil)},
 	}
 }

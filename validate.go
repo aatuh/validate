@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"github.com/aatuh/validate/v3/errors"
 	"github.com/aatuh/validate/v3/glue"
 	"github.com/aatuh/validate/v3/translator"
 
@@ -10,12 +11,14 @@ import (
 	_ "github.com/aatuh/validate/v3/validators/uuid"
 )
 
-// Re-export glue types for a developer-friendly root facade.
+// Re-export types for a developer-friendly root facade.
 type Validate = glue.Validate
 type StringBuilder = glue.StringBuilder
 type IntBuilder = glue.IntBuilder
 type BoolBuilder = glue.BoolBuilder
 type SliceBuilder = glue.SliceBuilder
+type CustomTypeBuilder = glue.CustomTypeBuilder
+type Errors = errors.Errors
 
 // New returns a Validate configured with sensible defaults.
 //
@@ -46,4 +49,12 @@ func FromTag(v *Validate, tag string) (func(any) error, error) {
 		v = New()
 	}
 	return v.FromTag(tag)
+}
+
+// ValidateStruct validates a struct using v (or a fresh instance).
+func ValidateStruct(v *Validate, s any) error {
+	if v == nil {
+		v = New()
+	}
+	return v.ValidateStruct(s)
 }

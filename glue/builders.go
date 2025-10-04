@@ -46,6 +46,11 @@ func (b *StringBuilder) Regex(pat string) *StringBuilder {
 	return b
 }
 
+func (b *StringBuilder) OmitEmpty() *StringBuilder {
+	b.rules = append(b.rules, types.NewRule(types.KOmitempty, nil))
+	return b
+}
+
 func (b *StringBuilder) Build() func(any) error {
 	return b.engine.CompileRules(b.rules)
 }
@@ -85,6 +90,11 @@ func (b *IntBuilder) MaxInt(n int64) *IntBuilder {
 	return b
 }
 
+func (b *IntBuilder) OmitEmpty() *IntBuilder {
+	b.rules = append(b.rules, types.NewRule(types.KOmitempty, nil))
+	return b
+}
+
 func (b *IntBuilder) Build() func(any) error {
 	return b.engine.CompileRules(b.rules)
 }
@@ -105,6 +115,11 @@ func NewBoolBuilder(engine *core.Engine) *BoolBuilder {
 
 func (b *BoolBuilder) Build() func(any) error {
 	return b.engine.CompileRules(b.rules)
+}
+
+func (b *BoolBuilder) OmitEmpty() *BoolBuilder {
+	b.rules = append(b.rules, types.NewRule(types.KOmitempty, nil))
+	return b
 }
 
 // SliceBuilder accumulates slice validation rules.
@@ -156,6 +171,27 @@ func (b *SliceBuilder) ForEachStringBuilder(sb *StringBuilder) *SliceBuilder {
 	return b.ForEachRules(cp...)
 }
 
+func (b *SliceBuilder) OmitEmpty() *SliceBuilder {
+	b.rules = append(b.rules, types.NewRule(types.KOmitempty, nil))
+	return b
+}
+
 func (b *SliceBuilder) Build() func(any) error {
 	return b.engine.CompileRules(b.rules)
+}
+
+// CustomTypeBuilder accumulates custom type validation rules.
+type CustomTypeBuilder struct {
+	engine   *core.Engine
+	typeName string
+	rules    []types.Rule
+}
+
+func (b *CustomTypeBuilder) Build() func(any) error {
+	return b.engine.CompileRules(b.rules)
+}
+
+func (b *CustomTypeBuilder) OmitEmpty() *CustomTypeBuilder {
+	b.rules = append(b.rules, types.NewRule(types.KOmitempty, nil))
+	return b
 }

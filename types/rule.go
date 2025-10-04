@@ -16,6 +16,9 @@ const (
 	KMinRunes  Kind = "minRunes"
 	KMaxRunes  Kind = "maxRunes"
 
+	// Generic modifiers
+	KOmitempty Kind = "omitempty"
+
 	// Integer validation kinds
 	KInt    Kind = "int"
 	KInt64  Kind = "int64"
