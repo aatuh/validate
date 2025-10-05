@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/aatuh/validate/v3"
-	"github.com/aatuh/validate/v3/types"
 )
 
 // Test_manualStructValidation demonstrates building validators
@@ -23,8 +22,8 @@ func Test_manualStructValidation(t *testing.T) {
 	nameV := v.String().MinLength(3).MaxLength(50).Build()
 	ageV := v.Int().MinInt(18).MaxInt(120).Build()
 	tagsV := v.Slice().MinLength(1).ForEachRules(
-		types.NewRule(types.KString, nil),
-		types.NewRule(types.KMinLength, map[string]any{"n": int64(2)}),
+		validate.NewRule(validate.KString, nil),
+		validate.NewRule(validate.KMinLength, map[string]any{"n": int64(2)}),
 	).Build()
 
 	u := User{Name: "Jane", Age: 20, Tags: []string{"go", "lib"}}
@@ -35,9 +34,9 @@ func Test_manualStructValidation(t *testing.T) {
 	_ = tagsV(u.Tags)
 
 	// Alternative: assemble rules directly and compile once
-	rules := []types.Rule{
-		types.NewRule(types.KString, nil),
-		types.NewRule(types.KMinLength, map[string]any{"n": int64(3)}),
+	rules := []validate.Rule{
+		validate.NewRule(validate.KString, nil),
+		validate.NewRule(validate.KMinLength, map[string]any{"n": int64(3)}),
 	}
 	nameV2 := v.CompileRules(rules)
 

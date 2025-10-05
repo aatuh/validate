@@ -4,6 +4,7 @@ import (
 	"github.com/aatuh/validate/v3/errors"
 	"github.com/aatuh/validate/v3/glue"
 	"github.com/aatuh/validate/v3/translator"
+	"github.com/aatuh/validate/v3/types"
 
 	// Ensure built-in plugin validators register themselves.
 	_ "github.com/aatuh/validate/v3/validators/email"
@@ -19,6 +20,58 @@ type BoolBuilder = glue.BoolBuilder
 type SliceBuilder = glue.SliceBuilder
 type CustomTypeBuilder = glue.CustomTypeBuilder
 type Errors = errors.Errors
+
+// Re-export types package for manual rule construction
+type Rule = types.Rule
+type Kind = types.Kind
+type ValidatorFunc = types.ValidatorFunc
+
+// Re-export commonly used rule kinds
+const (
+	// String validation kinds
+	KString    = types.KString
+	KLength    = types.KLength
+	KMinLength = types.KMinLength
+	KMaxLength = types.KMaxLength
+	KRegex     = types.KRegex
+	KOneOf     = types.KOneOf
+	KMinRunes  = types.KMinRunes
+	KMaxRunes  = types.KMaxRunes
+
+	// Generic modifiers
+	KOmitempty = types.KOmitempty
+
+	// Integer validation kinds
+	KInt    = types.KInt
+	KInt64  = types.KInt64
+	KMinInt = types.KMinInt
+	KMaxInt = types.KMaxInt
+
+	// Slice validation kinds
+	KSlice          = types.KSlice
+	KSliceLength    = types.KSliceLength
+	KMinSliceLength = types.KMinSliceLength
+	KMaxSliceLength = types.KMaxSliceLength
+	KForEach        = types.KForEach
+
+	// Boolean validation kinds
+	KBool = types.KBool
+)
+
+// Re-export translator package
+type Translator = translator.Translator
+type SimpleTranslator = translator.SimpleTranslator
+
+// Re-export translator functions
+var (
+	NewSimpleTranslator        = translator.NewSimpleTranslator
+	DefaultEnglishTranslations = translator.DefaultEnglishTranslations
+)
+
+// Re-export types functions
+var (
+	NewRule = types.NewRule
+)
 
 // New returns a Validate configured with sensible defaults.
 //

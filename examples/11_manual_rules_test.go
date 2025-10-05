@@ -5,17 +5,16 @@ import (
 	"testing"
 
 	"github.com/aatuh/validate/v3"
-	"github.com/aatuh/validate/v3/types"
 )
 
 // Test_manualRules demonstrates compiling a validator from AST rules
 // without using struct tags or fluent builders.
 func Test_manualRules(t *testing.T) {
 	// Build a string validator: string;min=3;max=8
-	rules := []types.Rule{
-		types.NewRule(types.KString, nil),
-		types.NewRule(types.KMinLength, map[string]any{"n": int64(3)}),
-		types.NewRule(types.KMaxLength, map[string]any{"n": int64(8)}),
+	rules := []validate.Rule{
+		validate.NewRule(validate.KString, nil),
+		validate.NewRule(validate.KMinLength, map[string]any{"n": int64(3)}),
+		validate.NewRule(validate.KMaxLength, map[string]any{"n": int64(8)}),
 	}
 
 	v := validate.New()

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/aatuh/validate/v3"
-	"github.com/aatuh/validate/v3/types"
 )
 
 // Test_sliceValidation demonstrates slice validation with element rules
@@ -19,8 +18,8 @@ func Test_sliceValidation(t *testing.T) {
 
 	// Method 2: ForEachRules (cache-friendly, better performance)
 	tagsV2 := v.Slice().MinLength(1).ForEachRules(
-		types.NewRule(types.KString, nil),
-		types.NewRule(types.KMinLength, map[string]any{"n": int64(2)}),
+		validate.NewRule(validate.KString, nil),
+		validate.NewRule(validate.KMinLength, map[string]any{"n": int64(2)}),
 	).Build()
 
 	// Method 3: ForEachStringBuilder (convenience for string elements)

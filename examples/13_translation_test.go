@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/aatuh/validate/v3"
-	"github.com/aatuh/validate/v3/translator"
 )
 
 // Test_translation demonstrates using custom translations
@@ -15,7 +14,7 @@ func Test_translation(t *testing.T) {
 		"string.min": "doit contenir au moins %d caractères",
 		"string.max": "ne peut pas dépasser %d caractères",
 	}
-	tr := translator.NewSimpleTranslator(msgs)
+	tr := validate.NewSimpleTranslator(msgs)
 
 	v := validate.New().WithTranslator(tr)
 

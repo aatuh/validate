@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/aatuh/validate/v3"
-	"github.com/aatuh/validate/v3/types"
 )
 
 // Test_builders demonstrates all available builder types
@@ -35,8 +34,8 @@ func Test_builders(t *testing.T) {
 
 	// Cache-friendly slice validation
 	sliceV2 := v.Slice().MinLength(1).ForEachRules(
-		types.NewRule(types.KString, nil),
-		types.NewRule(types.KMinLength, map[string]any{"n": int64(2)}),
+		validate.NewRule(validate.KString, nil),
+		validate.NewRule(validate.KMinLength, map[string]any{"n": int64(2)}),
 	).Build()
 	fmt.Println("cache-friendly slice valid:", sliceV2([]string{"go", "lib"}) == nil)
 
