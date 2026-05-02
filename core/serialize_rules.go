@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aatuh/validate/v3/types"
 )
@@ -21,41 +22,12 @@ func SerializeRules(rules []types.Rule) string {
 	var b strings.Builder
 	b.Grow(256)
 
-	var writeRule func(r types.Rule)
-	writeRule = func(r types.Rule) {
-		b.WriteString("{")
-		// Kind is stable.
-		b.WriteString("kind:")
-		b.WriteString(string(r.Kind))
-
-		// Args are serialized with sorted keys for determinism.
-		if r.Args != nil && len(r.Args) > 0 {
-			b.WriteString(",args:{")
-			keys := make([]string, 0, len(r.Args))
-			for k := range r.Args {
-				keys = append(keys, k)
-			}
-			sort.Strings(keys)
-			for i, k := range keys {
-				if i > 0 {
-					b.WriteByte(',')
-				}
-				b.WriteString(k)
-				b.WriteByte(':')
-				serializeArg(&b, r.Args[k])
-			}
-			b.WriteByte('}')
-		}
-
-		b.WriteByte('}')
-	}
-
 	b.WriteByte('[')
 	for i, r := range rules {
 		if i > 0 {
 			b.WriteByte(',')
 		}
-		writeRule(r)
+		serializeRule(&b, r)
 	}
 	b.WriteByte(']')
 
@@ -69,11 +41,52 @@ caching, because function pointer addresses are not deterministic.
 */
 func HasFuncArgs(rules []types.Rule) bool {
 	for _, r := range rules {
-		if argHasFunc(r.Args) {
+		if ruleHasFunc(r) {
 			return true
 		}
 	}
 	return false
+}
+
+func ruleHasFunc(r types.Rule) bool {
+	if argHasFunc(r.Args) {
+		return true
+	}
+	if r.Elem != nil {
+		return ruleHasFunc(*r.Elem)
+	}
+	return false
+}
+
+func serializeRule(b *strings.Builder, r types.Rule) {
+	b.WriteString("{")
+	b.WriteString("kind:")
+	b.WriteString(string(r.Kind))
+
+	if r.Args != nil && len(r.Args) > 0 {
+		b.WriteString(",args:{")
+		keys := make([]string, 0, len(r.Args))
+		for k := range r.Args {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for i, k := range keys {
+			if i > 0 {
+				b.WriteByte(',')
+			}
+			b.WriteString(k)
+			b.WriteByte(':')
+			serializeArg(b, r.Args[k])
+		}
+		b.WriteByte('}')
+	}
+
+	if r.Elem != nil {
+		b.WriteString(",elem:")
+		serializeRule(b, *r.Elem)
+	}
+
+	b.WriteByte('}')
 }
 
 func argHasFunc(v any) bool {
@@ -159,6 +172,8 @@ func serializeArg(b *strings.Builder, v any) {
 		b.WriteString(strconv.FormatFloat(float64(x), 'g', -1, 32))
 	case float64:
 		b.WriteString(strconv.FormatFloat(x, 'g', -1, 64))
+	case time.Time:
+		b.WriteString(strconv.Quote(x.UTC().Format(time.RFC3339Nano)))
 
 	case []string:
 		cp := append([]string(nil), x...)
@@ -196,28 +211,7 @@ func serializeArg(b *strings.Builder, v any) {
 		if x == nil {
 			b.WriteString("nil")
 		} else {
-			// Serialize a single rule.
-			b.WriteString("{")
-			b.WriteString("kind:")
-			b.WriteString(string(x.Kind))
-			if x.Args != nil && len(x.Args) > 0 {
-				b.WriteString(",args:{")
-				keys := make([]string, 0, len(x.Args))
-				for k := range x.Args {
-					keys = append(keys, k)
-				}
-				sort.Strings(keys)
-				for i, k := range keys {
-					if i > 0 {
-						b.WriteByte(',')
-					}
-					b.WriteString(k)
-					b.WriteByte(':')
-					serializeArg(b, x.Args[k])
-				}
-				b.WriteByte('}')
-			}
-			b.WriteByte('}')
+			serializeRule(b, *x)
 		}
 
 	default:

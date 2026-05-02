@@ -178,20 +178,15 @@ func (sv *StringValidators) OneOf(
 // reasonable input length limits.
 func (sv *StringValidators) Regex(pattern string) StringValidator {
 	// Add safety anchors to prevent catastrophic backtracking
-	safePattern := pattern
-	if !strings.HasPrefix(pattern, "^") {
-		safePattern = "^" + safePattern
-	}
-	if !strings.HasSuffix(pattern, "$") {
-		safePattern = safePattern + "$"
-	}
+	safePattern := normalizeLegacyRegexPattern(pattern)
 
 	re, err := regexp.Compile(safePattern)
 	if err != nil {
 		// Always fail if the pattern is invalid.
+		msgPattern := legacyRegexPatternForMessage(pattern)
 		return func(s string) error {
 			return errors.New(
-				sv.translate("string.regex.invalidPattern", pattern),
+				sv.translate("string.regex.invalidPattern", msgPattern),
 			)
 		}
 	}
@@ -208,11 +203,55 @@ func (sv *StringValidators) Regex(pattern string) StringValidator {
 		// Use the pre-compiled regex for performance
 		if !re.MatchString(s) {
 			return errors.New(
-				sv.translate("string.regex.noMatch", pattern),
+				sv.translate("string.regex.noMatch", legacyRegexPatternForMessage(pattern)),
 			)
 		}
 		return nil
 	}
+}
+
+func normalizeLegacyRegexPattern(pattern string) string {
+	if !strings.HasPrefix(pattern, "^") {
+		pattern = "^" + pattern
+	}
+	if !strings.HasSuffix(pattern, "$") {
+		pattern += "$"
+	}
+	return pattern
+}
+
+func legacyRegexPatternForMessage(pattern string) string {
+	const maxRunes = 100
+	pattern = normalizeLegacyRegexPattern(pattern)
+	if containsLegacySensitiveMarker(pattern) {
+		return "[redacted]"
+	}
+	runes := []rune(pattern)
+	if len(runes) <= maxRunes {
+		return pattern
+	}
+	return string(runes[:maxRunes]) + "..."
+}
+
+func containsLegacySensitiveMarker(s string) bool {
+	lower := strings.ToLower(s)
+	for _, marker := range []string{
+		"authorization",
+		"bearer",
+		"api_key",
+		"apikey",
+		"credential",
+		"password",
+		"passwd",
+		"private_key",
+		"secret",
+		"token",
+	} {
+		if strings.Contains(lower, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 // BuildStringValidator builds a composite string validator from tokens.

@@ -1,8 +1,13 @@
 package validators
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"testing"
+
+	verrs "github.com/aatuh/validate/v3/errors"
+	"github.com/aatuh/validate/v3/types"
 )
 
 type dummyTr struct{}
@@ -75,6 +80,53 @@ func TestString_OneOf_Regex(t *testing.T) {
 	}
 	if err := re("abcz"); err != nil {
 		t.Fatalf("regex should match, got %v", err)
+	}
+}
+
+func TestString_RegexMessagesDoNotExposeRawPatterns(t *testing.T) {
+	sv := NewStringValidators(dummyTr{})
+
+	secretPattern := "token=sk_live_" + strings.Repeat("x", 48) + "("
+	secret := sv.WithString(sv.Regex(secretPattern))
+	err := secret("anything")
+	if err == nil {
+		t.Fatalf("invalid regex should fail")
+	}
+	for _, forbidden := range []string{"token=", "sk_live", strings.Repeat("x", 24)} {
+		if strings.Contains(err.Error(), forbidden) {
+			t.Fatalf("legacy regex error exposed %q in %q", forbidden, err.Error())
+		}
+	}
+
+	longPattern := "(" + strings.Repeat("a", 200)
+	long := sv.WithString(sv.Regex(longPattern))
+	err = long("anything")
+	if err == nil {
+		t.Fatalf("invalid regex should fail")
+	}
+	if strings.Contains(err.Error(), strings.Repeat("a", 120)) {
+		t.Fatalf("legacy regex error exposed uncapped pattern in %q", err.Error())
+	}
+}
+
+func TestString_OneOfLegacyCaseInsensitiveCompilerExact(t *testing.T) {
+	sv := NewStringValidators(dummyTr{})
+	legacy := sv.WithString(sv.OneOf("green"))
+	if err := legacy("Green"); err != nil {
+		t.Fatalf("legacy oneof should pass case-insensitively: %v", err)
+	}
+
+	compiled := types.NewCompiler(dummyTr{}).Compile([]types.Rule{
+		types.NewRule(types.KString, nil),
+		types.NewRule(types.KOneOf, map[string]any{"values": []string{"green"}}),
+	})
+	err := compiled("Green")
+	if err == nil {
+		t.Fatalf("compiler oneof should compare exact strings")
+	}
+	var es verrs.Errors
+	if !errors.As(err, &es) || len(es) == 0 || es[0].Code != verrs.CodeStringOneOf {
+		t.Fatalf("compiled error = %v, want %q", err, verrs.CodeStringOneOf)
 	}
 }
 

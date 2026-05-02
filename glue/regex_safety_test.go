@@ -1,10 +1,12 @@
 package glue
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"time"
 
+	verrs "github.com/aatuh/validate/v3/errors"
 	"github.com/aatuh/validate/v3/translator"
 )
 
@@ -94,4 +96,68 @@ func TestRegex_InputLengthLimit(t *testing.T) {
 	if err := validator(overLimit); err == nil {
 		t.Errorf("input over limit should fail")
 	}
+}
+
+func TestRegex_InvalidPatternMessageDoesNotExposeRawPattern(t *testing.T) {
+	tr := translator.NewSimpleTranslator(
+		translator.DefaultEnglishTranslations(),
+	)
+	v := New().WithTranslator(tr)
+
+	secretPattern := "token=sk_live_" + strings.Repeat("x", 48) + "("
+	longPattern := "(" + strings.Repeat("a", 200)
+
+	tests := []struct {
+		name      string
+		build     func(t *testing.T) func(any) error
+		forbidden []string
+	}{
+		{
+			name: "builder redacts sensitive-looking pattern",
+			build: func(t *testing.T) func(any) error {
+				t.Helper()
+				return v.String().Regex(secretPattern).Build()
+			},
+			forbidden: []string{"token=", "sk_live", strings.Repeat("x", 24)},
+		},
+		{
+			name: "tag caps long pattern",
+			build: func(t *testing.T) func(any) error {
+				t.Helper()
+				fn, err := v.FromTag("string;regex=" + longPattern)
+				if err != nil {
+					t.Fatalf("FromTag returned error: %v", err)
+				}
+				return fn
+			},
+			forbidden: []string{strings.Repeat("a", 120)},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.build(t)("anything")
+			es := requireRegexErrorCode(t, err)
+			for _, forbidden := range tt.forbidden {
+				if strings.Contains(es[0].Msg, forbidden) || strings.Contains(err.Error(), forbidden) {
+					t.Fatalf("invalid regex error exposed %q in %q", forbidden, err.Error())
+				}
+			}
+		})
+	}
+}
+
+func requireRegexErrorCode(t *testing.T, err error) verrs.Errors {
+	t.Helper()
+	if err == nil {
+		t.Fatalf("got nil error, want %q", verrs.CodeStringRegexInvalidPattern)
+	}
+	var es verrs.Errors
+	if !errors.As(err, &es) || len(es) == 0 {
+		t.Fatalf("got %T %v, want structured regex error", err, err)
+	}
+	if es[0].Code != verrs.CodeStringRegexInvalidPattern {
+		t.Fatalf("code = %q, want %q; errors=%#v", es[0].Code, verrs.CodeStringRegexInvalidPattern, es)
+	}
+	return es
 }

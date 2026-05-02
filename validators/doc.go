@@ -1,10 +1,10 @@
-// Package validators provides built-in validation rules and plugin architecture.
+// Package validators provides legacy validation helpers and plugin architecture.
 //
-// The validators package contains built-in validation rules for common types
-// (string, int, slice, bool) and a plugin architecture for extensible validation
-// domains. It provides both built-in validation rules and a plugin architecture
-// that allows domain-specific validators (email, UUID, ULID) to be registered
-// and used seamlessly with the main validation system. The package is designed
-// to be both comprehensive for common use cases and extensible for domain-specific
-// validation requirements.
+// New code should usually prefer the root package builders, tags, and
+// structured errors. This package remains a supported compatibility layer for
+// older direct validators and as the plugin host for domain validators such as
+// universal formats, email, UUID, and ULID. Some direct helpers intentionally
+// preserve historical behavior that differs from the main compiler path; for example,
+// StringValidators.OneOf compares case-insensitively while the main compiler's
+// oneof rule compares exact strings.
 package validators

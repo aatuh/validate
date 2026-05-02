@@ -7,6 +7,7 @@ import (
 	"unicode"
 
 	verrs "github.com/aatuh/validate/v3/errors"
+	"github.com/aatuh/validate/v3/translator"
 	"github.com/aatuh/validate/v3/types"
 )
 
@@ -40,6 +41,7 @@ const KEmail types.Kind = "email"
 
 func init() {
 	types.RegisterRule(KEmail, compileEmail)
+	translator.RegisterDefaultEnglishTranslations(DefaultEmailTranslations())
 }
 
 func compileEmail(c *types.Compiler, _ types.Rule) (func(any) error, error) {

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	verrs "github.com/aatuh/validate/v3/errors"
+	"github.com/aatuh/validate/v3/translator"
 	"github.com/aatuh/validate/v3/types"
 )
 
@@ -24,6 +25,7 @@ const KULID types.Kind = "ulid"
 
 func init() {
 	types.RegisterRule(KULID, compileULID)
+	translator.RegisterDefaultEnglishTranslations(DefaultULIDTranslations())
 }
 
 func compileULID(c *types.Compiler, _ types.Rule) (func(any) error, error) {

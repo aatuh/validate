@@ -2,9 +2,15 @@ package errors
 
 const (
 	// Generic
-	CodeUnknown   = "unknown"
-	CodeRequired  = "required"
-	CodeOmitEmpty = "omitempty" // informational when skipped
+	CodeUnknown        = "unknown"
+	CodeRequired       = "required"
+	CodeRequiredWith   = "required.with"
+	CodeRequiredIf     = "required.if"
+	CodeRequiredUnless = "required.unless"
+	CodeOmitEmpty      = "omitempty" // informational when skipped
+	CodeFieldEqual     = "field.eq"
+	CodeFieldNotEqual  = "field.ne"
+	CodeFieldReference = "field.reference"
 
 	// String
 	CodeStringType                = "string.type"
@@ -16,24 +22,52 @@ const (
 	CodeStringOneOf               = "string.oneof"
 	CodeStringPrefix              = "string.prefix"
 	CodeStringSuffix              = "string.suffix"
+	CodeStringContains            = "string.contains"
+	CodeStringNotContains         = "string.notContains"
 	CodeStringURL                 = "string.url"
 	CodeStringHost                = "string.hostname"
+	CodeStringIP                  = "string.ip"
+	CodeStringCIDR                = "string.cidr"
+	CodeStringASCII               = "string.ascii"
+	CodeStringAlpha               = "string.alpha"
+	CodeStringAlnum               = "string.alnum"
 	CodeStringRegexInvalidPattern = "string.regex.invalidPattern"
 	CodeStringRegexInputTooLong   = "string.regex.inputTooLong"
 	CodeStringRegexNoMatch        = "string.regex.noMatch"
 	CodeStringMinRunes            = "string.minRunes"
 	CodeStringMaxRunes            = "string.maxRunes"
+	CodeStringSlugInvalid         = "string.slug.invalid"
+	CodeStringSemVerInvalid       = "string.semver.invalid"
+	CodeStringJSONInvalid         = "string.json.invalid"
+	CodeStringJWTInvalid          = "string.jwt.invalid"
+	CodeStringBase64Invalid       = "string.base64.invalid"
+	CodeStringBase64URLInvalid    = "string.base64url.invalid"
+	CodeStringHexInvalid          = "string.hex.invalid"
+	CodeStringMACInvalid          = "string.mac.invalid"
+	CodeStringE164Invalid         = "string.e164.invalid"
+	CodeStringFQDNInvalid         = "string.fqdn.invalid"
+	CodeStringDateInvalid         = "string.date.invalid"
+	CodeStringRFC3339Invalid      = "string.rfc3339.invalid"
+	CodeStringLuhnInvalid         = "string.luhn.invalid"
+	CodeStringUUIDVersion         = "string.uuid.version"
 
 	// Number (covers ints and floats)
-	CodeIntType        = "int.type"
-	CodeInt64Type      = "int64.type"
-	CodeIntMin         = "int.min"
-	CodeIntMax         = "int.max"
-	CodeNumberMin      = "number.min"
-	CodeNumberMax      = "number.max"
-	CodeNumberPositive = "number.positive"
-	CodeNumberNonNeg   = "number.nonnegative"
-	CodeNumberBetween  = "number.between"
+	CodeIntType                = "int.type"
+	CodeInt64Type              = "int64.type"
+	CodeNumberType             = "number.type"
+	CodeIntMin                 = "int.min"
+	CodeIntMax                 = "int.max"
+	CodeNumberMin              = "number.min"
+	CodeNumberMax              = "number.max"
+	CodeNumberPositive         = "number.positive"
+	CodeNumberNonNeg           = "number.nonnegative"
+	CodeNumberBetween          = "number.between"
+	CodeNumberGreaterThan      = "number.gt"
+	CodeNumberGreaterThanEqual = "number.gte"
+	CodeNumberLessThan         = "number.lt"
+	CodeNumberLessThanEqual    = "number.lte"
+	CodeNumberFinite           = "number.finite"
+	CodeFloatType              = "float.type"
 
 	// Slice
 	CodeSliceType     = "slice.type"
@@ -44,14 +78,30 @@ const (
 	CodeSliceUnique   = "slice.unique"
 	CodeSliceContains = "slice.contains"
 
+	// Array
+	CodeArrayType     = "array.type"
+	CodeArrayLength   = "array.length"
+	CodeArrayMin      = "array.min"
+	CodeArrayMax      = "array.max"
+	CodeArrayForEach  = "array.forEach"
+	CodeArrayUnique   = "array.unique"
+	CodeArrayContains = "array.contains"
+
 	// Map
+	CodeMapType    = "map.type"
+	CodeMapLength  = "map.length"
 	CodeMapMinKeys = "map.minkeys"
 	CodeMapMaxKeys = "map.maxkeys"
+	CodeMapKeys    = "map.keys"
+	CodeMapValues  = "map.values"
 
 	// Bool
-	CodeBoolType = "bool.type"
+	CodeBoolType  = "bool.type"
+	CodeBoolTrue  = "bool.true"
+	CodeBoolFalse = "bool.false"
 
 	// Time
+	CodeTimeType    = "time.type"
 	CodeTimeNotZero = "time.notzero"
 	CodeTimeBefore  = "time.before"
 	CodeTimeAfter   = "time.after"

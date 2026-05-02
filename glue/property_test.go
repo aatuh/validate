@@ -1,7 +1,12 @@
 package glue
 
 import (
+	"errors"
 	"testing"
+	"time"
+
+	verrs "github.com/aatuh/validate/v3/errors"
+	"github.com/aatuh/validate/v3/types"
 )
 
 // TestTagsVsBuildersEquivalence ensures that tag-based and builder-based
@@ -163,6 +168,91 @@ func TestTagsVsBuildersErrorCodes(t *testing.T) {
 	}
 }
 
+func TestTagsVsBuildersExpandedErrorCodeEquivalence(t *testing.T) {
+	now := time.Date(2026, 5, 8, 12, 0, 0, 0, time.UTC)
+	customTypeName := uniqueGlueTypeName(t)
+
+	v := New().
+		WithRuleCompiler("alwaysFail", func(c *types.Compiler, rule types.Rule) (func(any) error, error) {
+			return func(any) error {
+				return verrs.Errors{verrs.FieldError{Code: "custom.fail"}}
+			}, nil
+		}).
+		WithTypeValidator(customTypeName, glueStringTypeFactory{want: "ok", code: "type.local"})
+
+	tests := []struct {
+		name    string
+		tag     string
+		buildFn func(*Validate) func(any) error
+		value   any
+	}{
+		{
+			name:    "expanded string",
+			tag:     "string;contains=go",
+			buildFn: func(v *Validate) func(any) error { return v.String().Contains("go").Build() },
+			value:   "java",
+		},
+		{
+			name:    "number",
+			tag:     "float;gt=2",
+			buildFn: func(v *Validate) func(any) error { return v.Float().GreaterThan(2).Build() },
+			value:   1.5,
+		},
+		{
+			name:    "bool",
+			tag:     "bool;true",
+			buildFn: func(v *Validate) func(any) error { return v.Bool().True().Build() },
+			value:   false,
+		},
+		{
+			name:    "slice",
+			tag:     "slice;unique",
+			buildFn: func(v *Validate) func(any) error { return v.Slice().Unique().Build() },
+			value:   []string{"a", "a"},
+		},
+		{
+			name:    "map",
+			tag:     "map;minKeys=1",
+			buildFn: func(v *Validate) func(any) error { return v.Map().MinKeys(1).Build() },
+			value:   map[string]string{},
+		},
+		{
+			name:    "time",
+			tag:     "time;after=2026-05-08T12:00:00Z",
+			buildFn: func(v *Validate) func(any) error { return v.Time().After(now).Build() },
+			value:   now.Add(-time.Second),
+		},
+		{
+			name:    "custom rule",
+			tag:     "string;alwaysFail",
+			buildFn: func(v *Validate) func(any) error { return v.String().Rule("alwaysFail", nil).Build() },
+			value:   "value",
+		},
+		{
+			name:    "custom type",
+			tag:     customTypeName,
+			buildFn: func(v *Validate) func(any) error { return v.CustomType(customTypeName).Build() },
+			value:   "bad",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tagValidator, err := v.FromRules([]string{tc.tag})
+			if err != nil {
+				t.Fatalf("tag validator: %v", err)
+			}
+			builderValidator := tc.buildFn(v)
+
+			tagCode := firstErrorCode(t, tagValidator(tc.value))
+			builderCode := firstErrorCode(t, builderValidator(tc.value))
+			if tagCode != builderCode {
+				t.Fatalf("code mismatch: tag=%q builder=%q", tagCode, builderCode)
+			}
+		})
+	}
+}
+
 // TestTagsVsBuildersPerformance ensures that both approaches have similar
 // performance characteristics (basic smoke test).
 func TestTagsVsBuildersPerformance(t *testing.T) {
@@ -199,4 +289,16 @@ func contains(s, substr string) bool {
 		(len(s) > len(substr) && (s[:len(substr)] == substr ||
 			s[len(s)-len(substr):] == substr ||
 			contains(s[1:], substr))))
+}
+
+func firstErrorCode(t *testing.T, err error) string {
+	t.Helper()
+	if err == nil {
+		t.Fatalf("got nil error, want structured validation error")
+	}
+	var es verrs.Errors
+	if !errors.As(err, &es) || len(es) == 0 {
+		t.Fatalf("got %T %v, want structured errors", err, err)
+	}
+	return es[0].Code
 }

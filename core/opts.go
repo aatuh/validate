@@ -1,9 +1,13 @@
 package core
 
+import "reflect"
+
 // ValidateOpts tunes validation behavior per call.
 type ValidateOpts struct {
-	StopOnFirst bool
-	PathSep     string
+	StopOnFirst     bool
+	CollectAllRules bool
+	PathSep         string
+	FieldNameFunc   func(reflect.StructField) string
 }
 
 // WithDefaults keeps the door open for future defaults.
