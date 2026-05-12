@@ -25,6 +25,9 @@ Further docs:
 
 - [Why use validate?](docs/why-validate.md)
 - [Recipes](docs/recipes.md)
+- [Maturity criteria](docs/maturity.md)
+- [Error codes](docs/error-codes.md)
+- [Security policy](SECURITY.md)
 - [Docs index](docs/README.md)
 
 ## Quick Start
@@ -444,3 +447,4 @@ Useful focused targets:
 | `make coverage` | Run race coverage and print the coverage summary |
 | `make fuzz` | Run `scripts/fuzz.sh` |
 | `make vuln` | Install and run `govulncheck` |
+| `make bench` | Run benchmark baselines; override with `BENCH_PKG=./types` |

@@ -1,10 +1,12 @@
 SHELL := /bin/bash
 
 PKG ?= ./...
+BENCH_PKG ?= ./...
+BENCH ?= .
 COVERAGE_OUT ?= coverage.out
 GOVULNCHECK ?= $(shell go env GOPATH)/bin/govulncheck
 
-.PHONY: tidy vet test examples race-cover coverage fuzz vuln ci finalize clean
+.PHONY: tidy vet test examples race-cover coverage fuzz vuln bench ci finalize clean
 
 tidy:
 	go mod tidy
@@ -32,6 +34,9 @@ fuzz:
 vuln:
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 	"$(GOVULNCHECK)" ./...
+
+bench:
+	go test "$(BENCH_PKG)" -run=^$$ -bench="$(BENCH)" -benchmem
 
 ci: tidy vet test examples vuln coverage fuzz
 

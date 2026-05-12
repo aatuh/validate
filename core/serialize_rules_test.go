@@ -50,6 +50,83 @@ func TestCompileRules_CacheKeyIncludesRuleElem(t *testing.T) {
 	}
 }
 
+type opaqueCacheArg struct{ value string }
+
+func (arg opaqueCacheArg) String() string { return "opaque:" + arg.value }
+
+func TestCompileRules_FunctionArgsSkipASTCache(t *testing.T) {
+	tests := []struct {
+		name string
+		args map[string]any
+	}{
+		{
+			name: "direct function",
+			args: map[string]any{"validator": func(any) error { return nil }},
+		},
+		{
+			name: "nested function",
+			args: map[string]any{"nested": []any{func(any) error { return nil }}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			compiles := 0
+			v := New().WithRuleCompiler("counting", func(*types.Compiler, types.Rule) (func(any) error, error) {
+				compiles++
+				return func(any) error { return nil }, nil
+			})
+
+			rules := []types.Rule{types.NewRule("counting", tt.args)}
+			if !HasFuncArgs(rules) {
+				t.Fatalf("HasFuncArgs(%#v) = false, want true", rules)
+			}
+			if _, err := v.CompileRulesE(rules); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := v.CompileRulesE(rules); err != nil {
+				t.Fatal(err)
+			}
+			if compiles != 2 {
+				t.Fatalf("compiler calls = %d, want 2 because function args skip cache", compiles)
+			}
+		})
+	}
+}
+
+func TestCompileRules_DeterministicArgsUseASTCache(t *testing.T) {
+	compiles := 0
+	v := New().WithRuleCompiler("counting", func(*types.Compiler, types.Rule) (func(any) error, error) {
+		compiles++
+		return func(any) error { return nil }, nil
+	})
+
+	rules := []types.Rule{types.NewRule("counting", map[string]any{"value": "stable"})}
+	if HasFuncArgs(rules) {
+		t.Fatalf("HasFuncArgs(%#v) = true, want false", rules)
+	}
+	if _, err := v.CompileRulesE(rules); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := v.CompileRulesE(rules); err != nil {
+		t.Fatal(err)
+	}
+	if compiles != 1 {
+		t.Fatalf("compiler calls = %d, want 1 because deterministic args use cache", compiles)
+	}
+}
+
+func TestSerializeRules_OpaqueCustomArgsUseStringFallback(t *testing.T) {
+	rules := []types.Rule{types.NewRule("opaque", map[string]any{
+		"value": opaqueCacheArg{value: "custom"},
+	})}
+
+	got := SerializeRules(rules)
+	if !strings.Contains(got, `value:"opaque:custom"`) {
+		t.Fatalf("SerializeRules opaque fallback = %q", got)
+	}
+}
+
 func TestSerializeRules_IncludesElemAndDetectsElemFunctions(t *testing.T) {
 	ruleA := types.NewRuleWithElem(types.KForEach, nil, &types.Rule{
 		Kind: types.KMinLength,
