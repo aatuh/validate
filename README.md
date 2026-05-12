@@ -15,6 +15,18 @@ format validators, custom rules, and optional message translation.
 - `github.com/aatuh/validate/v3/translator`: message translation helpers
 - `github.com/aatuh/validate/v3/validators/...`: root and optional plugin validators
 
+## Boundaries And Docs
+
+`validate` is a validation library, not an API framework. It does not bind
+HTTP requests, manage routes, own response formats, or replace application
+transport code.
+
+Further docs:
+
+- [Why use validate?](docs/why-validate.md)
+- [Recipes](docs/recipes.md)
+- [Docs index](docs/README.md)
+
 ## Quick Start
 
 ```go
@@ -411,13 +423,24 @@ optional plugin packs.
 
 ## Quality Gate
 
-The repository has no Makefile. CI-equivalent checks are:
+Use the Makefile-backed gate locally and in CI:
 
 ```bash
-go mod tidy
-go vet ./...
-govulncheck ./...
-go test ./... -race -covermode=atomic -coverprofile=coverage.out
-go tool cover -func=coverage.out
-scripts/fuzz.sh
+make finalize
 ```
+
+`make ci` is the same full gate used by GitHub Actions. It runs module tidy
+checks, `go vet ./...`, `go test ./...`, executable examples,
+`govulncheck ./...`, race tests with atomic coverage, coverage summary, and
+the parser/compiler fuzz smoke script.
+
+Useful focused targets:
+
+| Target | Purpose |
+|--------|---------|
+| `make test` | Run `go test ./...`; override with `PKG=./types` |
+| `make examples` | Run executable examples with `-v -count 1` |
+| `make race-cover` | Run race tests with `coverage.out` |
+| `make coverage` | Run race coverage and print the coverage summary |
+| `make fuzz` | Run `scripts/fuzz.sh` |
+| `make vuln` | Install and run `govulncheck` |

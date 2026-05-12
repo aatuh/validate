@@ -1,0 +1,5 @@
+coverage.out
+*.prof
+*.test
+testdata/fuzz/
+**/testdata/fuzz/
